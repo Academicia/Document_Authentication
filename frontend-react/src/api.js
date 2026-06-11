@@ -71,3 +71,122 @@ export function getSignerSigned() {
 export function getAuditLogs(docId) {
   return request('/audit/' + docId)
 }
+
+// Admin API
+export function adminGetDashboard() {
+  return request('/admin/dashboard')
+}
+
+export function adminGetStudents() {
+  return request('/admin/students')
+}
+
+export function adminAddStudent(data) {
+  const params = new URLSearchParams(data)
+  return fetch(BASE + '/admin/students', {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}`, 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: params
+  }).then(r => { if (!r.ok) throw new Error('Failed to add student'); return r.json() })
+}
+
+export function adminUpdateStudent(id, data) {
+  const params = new URLSearchParams(data)
+  return fetch(BASE + '/admin/students/' + id, {
+    method: 'PUT',
+    headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}`, 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: params
+  }).then(r => { if (!r.ok) throw new Error('Failed to update student'); return r.json() })
+}
+
+export function adminDeleteStudent(id) {
+  return request('/admin/students/' + id, { method: 'DELETE' })
+}
+
+export function adminGetSigners() {
+  return request('/admin/signers')
+}
+
+export function adminAddSigner(data) {
+  const params = new URLSearchParams(data)
+  return fetch(BASE + '/admin/signers', {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}`, 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: params
+  }).then(r => { if (!r.ok) throw new Error('Failed to add signer'); return r.json() })
+}
+
+export function adminUpdateSigner(id, data) {
+  const params = new URLSearchParams(data)
+  return fetch(BASE + '/admin/signers/' + id, {
+    method: 'PUT',
+    headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}`, 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: params
+  }).then(r => { if (!r.ok) throw new Error('Failed to update signer'); return r.json() })
+}
+
+export function adminDeleteSigner(id) {
+  return request('/admin/signers/' + id, { method: 'DELETE' })
+}
+
+export function adminGetDocumentTypes() {
+  return request('/admin/document-types')
+}
+
+export function adminAddDocumentType(data) {
+  const params = new URLSearchParams(data)
+  return fetch(BASE + '/admin/document-types', {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}`, 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: params
+  }).then(r => { if (!r.ok) throw new Error('Failed to add document type'); return r.json() })
+}
+
+export function adminUpdateDocumentType(id, data) {
+  const params = new URLSearchParams(data)
+  return fetch(BASE + '/admin/document-types/' + id, {
+    method: 'PUT',
+    headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}`, 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: params
+  }).then(r => { if (!r.ok) throw new Error('Failed to update document type'); return r.json() })
+}
+
+export function adminDeleteDocumentType(id) {
+  return request('/admin/document-types/' + id, { method: 'DELETE' })
+}
+
+export function adminGetWorkflows() {
+  return request('/admin/workflows')
+}
+
+export function adminAddWorkflowStep(data) {
+  const params = new URLSearchParams(data)
+  return fetch(BASE + '/admin/workflows', {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}`, 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: params
+  }).then(r => { if (!r.ok) throw new Error('Failed to add workflow step'); return r.json() })
+}
+
+export function adminDeleteWorkflow(id) {
+  return request('/admin/workflows/' + id, { method: 'DELETE' })
+}
+
+export function adminGetDocuments(status) {
+  let url = '/admin/documents'
+  if (status) url += '?status=' + status
+  return request(url)
+}
+
+export function adminGetActivityLogs() {
+  return request('/admin/activity-logs')
+}
+
+export function adminUpdateProfile(data) {
+  const params = new URLSearchParams(data)
+  return fetch(BASE + '/admin/profile', {
+    method: 'PUT',
+    headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}`, 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: params
+  }).then(r => { if (!r.ok) throw new Error('Failed to update profile'); return r.json() })
+}

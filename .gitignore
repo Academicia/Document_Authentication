@@ -17,3 +17,6 @@ output/
 *~
 .env
 .venv/
+
+err_*.txt
+server_err*.txt

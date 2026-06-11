@@ -3,12 +3,12 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 
-from jose import JWTError, jwt
-from passlib.context import CryptContext
 from datetime import datetime, timedelta
 from fastapi import Depends
-from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+from jose import jwt
+from fastapi.security import OAuth2PasswordRequestForm
 from database import SessionLocal, Document, User, AuditLog
+from admin_routes import router as admin_router
 
 import shutil
 import uuid
@@ -35,6 +35,8 @@ app.mount("/docs", StaticFiles(directory="documents"), name="documents")
 app.mount("/output", StaticFiles(directory="output"), name="output")
 app.mount("/assets", StaticFiles(directory="frontend-react/dist/assets"), name="react-assets")
 
+app.include_router(admin_router)
+
 REACT_DIST = "frontend-react/dist"
 
 @app.get("/")
@@ -57,18 +59,18 @@ async def serve_dashboard():
 async def serve_viewer(doc_id: str):
     return FileResponse(f"{REACT_DIST}/index.html")
 
+@app.get("/admin")
+@app.get("/admin/{path:path}")
+async def serve_admin():
+    return FileResponse(f"{REACT_DIST}/index.html")
+
 UPLOAD_FOLDER = "documents"
 OUTPUT_FOLDER = "output"
 
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 os.makedirs(OUTPUT_FOLDER, exist_ok=True)
 
-SECRET_KEY = "supersecretkey"
-ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 60
-
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
+from auth_utils import hash_password, verify_password, SECRET_KEY, ALGORITHM, ACCESS_TOKEN_EXPIRE_MINUTES, create_access_token, get_current_user
 
 def hash_file(filepath):
     digest = hashes.Hash(hashes.SHA256())
@@ -76,40 +78,6 @@ def hash_file(filepath):
         while chunk := f.read(4096):
             digest.update(chunk)
     return digest.finalize()
-
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-
-def hash_password(password: str):
-    return pwd_context.hash(password)
-
-def verify_password(plain_password, hashed_password):
-    return pwd_context.verify(plain_password, hashed_password)
-
-def create_access_token(data: dict):
-    to_encode = data.copy()
-    expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-    to_encode.update({"exp": expire})
-    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
-    return encoded_jwt
-
-def get_current_user(token: str = Depends(oauth2_scheme)):
-    credentials_exception = HTTPException(
-        status_code=401,
-        detail="Could not validate credentials"
-    )
-    try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        username = payload.get("sub")
-        if username is None:
-            raise credentials_exception
-    except JWTError:
-        raise credentials_exception
-    db = SessionLocal()
-    user = db.query(User).filter(User.username == username).first()
-    db.close()
-    if user is None:
-        raise credentials_exception
-    return user
 
 def log_action(document_id, action, user):
     db = SessionLocal()

@@ -15,9 +15,13 @@ export default function LoginPage() {
     if (!username || !password) { toast('Please fill all fields', 'error'); return }
     setLoading(true)
     try {
-      await login(username, password)
+      const data = await login(username, password)
       toast('Login successful', 'success')
-      navigate('/dashboard')
+      if (data.role === 'admin') {
+        navigate('/admin')
+      } else {
+        navigate('/dashboard')
+      }
     } catch (err) {
       toast(err.message || 'Login failed', 'error')
     } finally {

@@ -5,6 +5,7 @@ import LoginPage from './pages/LoginPage'
 import RegisterPage from './pages/RegisterPage'
 import Dashboard from './pages/Dashboard'
 import ViewerPage from './pages/ViewerPage'
+import AdminDashboard from './pages/admin/AdminDashboard'
 
 function ProtectedRoute({ children }) {
   const { user, loading } = useAuth()
@@ -22,6 +23,8 @@ export default function App() {
         <Route path="/register" element={<RegisterPage />} />
         <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
         <Route path="/viewer/:docId" element={<ProtectedRoute><ViewerPage /></ProtectedRoute>} />
+        <Route path="/admin/*" element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />
+        <Route path="/admin" element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
     </>

@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, Form, Query
-from database import SessionLocal, User, Document, DocumentType, ApprovalWorkflow, Approval, AuditLog
+from backend.database import SessionLocal, User, Document, DocumentType, ApprovalWorkflow, Approval, AuditLog
 import uuid
-from auth_utils import hash_password, get_current_user
+from backend.auth_utils import hash_password, get_current_user
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 
@@ -248,7 +248,7 @@ def update_admin_profile(current_password: str = Form(...),
                          email: str = Form(None),
                          full_name: str = Form(None),
                          admin: User = Depends(get_admin)):
-    from auth_utils import verify_password as vp
+    from backend.auth_utils import verify_password as vp
     if not vp(current_password, admin.hashed_password):
         raise HTTPException(status_code=400, detail="Current password is incorrect")
     db = SessionLocal()

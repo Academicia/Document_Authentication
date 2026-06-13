@@ -183,7 +183,7 @@ export default function AdminDashboard() {
               {students.length === 0 ? <div className="empty-state">No students found</div> : (
                 <div style={{ overflowX: 'auto' }}>
                   <table className="glass-table">
-                    <thead><tr><th>Username</th><th>Full Name</th><th>Email</th><th>Department</th><th>Actions</th></tr></thead>
+                    <thead><tr><th>EnrollMent Number</th><th>Full Name</th><th>Email</th><th>Department</th><th>Actions</th></tr></thead>
                     <tbody>
                       {students.map(s => (
                         <tr key={s.id}>

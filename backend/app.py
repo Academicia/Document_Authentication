@@ -7,8 +7,8 @@ from datetime import datetime, timedelta
 from fastapi import Depends
 from jose import jwt
 from fastapi.security import OAuth2PasswordRequestForm
-from database import SessionLocal, Document, User, AuditLog
-from admin_routes import router as admin_router
+from backend.database import SessionLocal, Document, User, AuditLog
+from backend.admin_routes import router as admin_router
 
 import shutil
 import uuid
@@ -31,13 +31,13 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.mount("/docs", StaticFiles(directory="documents"), name="documents")
-app.mount("/output", StaticFiles(directory="output"), name="output")
-app.mount("/assets", StaticFiles(directory="frontend-react/dist/assets"), name="react-assets")
+app.mount("/docs", StaticFiles(directory="backend/documents"), name="documents")
+app.mount("/output", StaticFiles(directory="backend/output"), name="output")
+app.mount("/assets", StaticFiles(directory="frontend/dist/assets"), name="react-assets")
 
 app.include_router(admin_router)
 
-REACT_DIST = "frontend-react/dist"
+REACT_DIST = "frontend/dist"
 
 @app.get("/")
 async def serve_root():
@@ -64,13 +64,13 @@ async def serve_viewer(doc_id: str):
 async def serve_admin():
     return FileResponse(f"{REACT_DIST}/index.html")
 
-UPLOAD_FOLDER = "documents"
-OUTPUT_FOLDER = "output"
+UPLOAD_FOLDER = "backend/documents"
+OUTPUT_FOLDER = "backend/output"
 
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 os.makedirs(OUTPUT_FOLDER, exist_ok=True)
 
-from auth_utils import hash_password, verify_password, SECRET_KEY, ALGORITHM, ACCESS_TOKEN_EXPIRE_MINUTES, create_access_token, get_current_user
+from backend.auth_utils import hash_password, verify_password, SECRET_KEY, ALGORITHM, ACCESS_TOKEN_EXPIRE_MINUTES, create_access_token, get_current_user
 
 def hash_file(filepath):
     digest = hashes.Hash(hashes.SHA256())
@@ -152,7 +152,8 @@ async def upload_document(file: UploadFile = File(...),signer_id: str = Form(...
     }
 
 @app.post("/sign/{doc_id}")
-def sign_document(doc_id: str,current_user: User = Depends(get_current_user)):
+def sign_document(doc_id: str, qr_x: int = Form(450), qr_y: int = Form(700),
+                  qr_page: int = Form(0), current_user: User = Depends(get_current_user)):
         if current_user.role != "SIGNER":
             raise HTTPException(status_code=403, detail="Only signer can sign documents")
         db = SessionLocal()
@@ -164,7 +165,7 @@ def sign_document(doc_id: str,current_user: User = Depends(get_current_user)):
             db.close()
             return {"message": "Already signed"}
         file_hash = hash_file(doc.file_path)
-        with open("crypto/private_key.pem", "rb") as f:
+        with open("backend/crypto/private_key.pem", "rb") as f:
             private_key = serialization.load_pem_private_key(
             f.read(),
             password=None
@@ -188,15 +189,20 @@ def sign_document(doc_id: str,current_user: User = Depends(get_current_user)):
         qr_path = f"{OUTPUT_FOLDER}/{doc_id}_qr.png"
         qr.save(qr_path)
         overlay_pdf = f"{OUTPUT_FOLDER}/{doc_id}_overlay.pdf"
-        c = canvas.Canvas(overlay_pdf)
-        c.drawImage(qr_path, 450, 700, width=100, height=100)
-        c.save()
         reader = PdfReader(doc.file_path)
+        target_page = reader.pages[qr_page]
+        mb = target_page.mediabox
+        page_w = float(mb.width)
+        page_h = float(mb.height)
+        c = canvas.Canvas(overlay_pdf, pagesize=(page_w, page_h))
+        c.drawImage(qr_path, qr_x, qr_y, width=100, height=100)
+        c.save()
         overlay = PdfReader(overlay_pdf)
         writer = PdfWriter()
-        page = reader.pages[0]
-        page.merge_page(overlay.pages[0])
-        writer.add_page(page)
+        for i, pg in enumerate(reader.pages):
+            if i == qr_page:
+                pg.merge_page(overlay.pages[0])
+            writer.add_page(pg)
         final_pdf_path = f"{OUTPUT_FOLDER}/{doc_id}_signed.pdf"
         with open(final_pdf_path, "wb") as f:
             writer.write(f)

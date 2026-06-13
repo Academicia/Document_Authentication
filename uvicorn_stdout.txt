@@ -1,7 +1,0 @@
-INFO:     127.0.0.1:57653 - "GET / HTTP/1.1" 200 OK
-INFO:     127.0.0.1:57653 - "GET /login HTTP/1.1" 200 OK
-INFO:     127.0.0.1:57653 - "POST /register HTTP/1.1" 200 OK
-INFO:     127.0.0.1:57653 - "POST /login HTTP/1.1" 200 OK
-INFO:     127.0.0.1:57653 - "GET /verify/test HTTP/1.1" 200 OK
-INFO:     127.0.0.1:60928 - "GET / HTTP/1.1" 200 OK
-INFO:     127.0.0.1:63338 - "GET / HTTP/1.1" 200 OK

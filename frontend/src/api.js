@@ -48,8 +48,17 @@ export function uploadDoc(file, signerId) {
   }).then(r => { if (!r.ok) throw new Error('Upload failed'); return r.json() })
 }
 
-export function signDocument(docId) {
-  return request('/sign/' + docId, { method: 'POST' })
+export function signDocument(docId, qr_x = 450, qr_y = 700, qr_page = 0) {
+  const params = new URLSearchParams({ qr_x, qr_y, qr_page })
+  const token = localStorage.getItem('token')
+  return fetch(BASE + '/sign/' + docId, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/x-www-form-urlencoded'
+    },
+    body: params
+  }).then(r => { if (!r.ok) throw new Error('Signing failed'); return r.json() })
 }
 
 export function verifyDocument(docId) {

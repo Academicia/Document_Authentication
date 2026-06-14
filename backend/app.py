@@ -23,6 +23,16 @@ from PyPDF2 import PdfReader, PdfWriter
 
 app = FastAPI()
 
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+PROJECT_ROOT = os.path.dirname(BASE_DIR)
+UPLOAD_FOLDER = os.path.join(BASE_DIR, "documents")
+OUTPUT_FOLDER = os.path.join(BASE_DIR, "output")
+REACT_DIST = os.path.join(PROJECT_ROOT, "frontend", "dist")
+REACT_ASSETS = os.path.join(REACT_DIST, "assets")
+
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+os.makedirs(OUTPUT_FOLDER, exist_ok=True)
+
 cors_origins = os.getenv("CORS_ORIGINS", "http://localhost:3000,http://127.0.0.1:3000").split(",")
 app.add_middleware(
     CORSMiddleware,
@@ -32,44 +42,39 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.mount("/docs", StaticFiles(directory="backend/documents"), name="documents")
-app.mount("/output", StaticFiles(directory="backend/output"), name="output")
-app.mount("/assets", StaticFiles(directory="frontend/dist/assets"), name="react-assets")
+app.mount("/docs", StaticFiles(directory=UPLOAD_FOLDER), name="documents")
+app.mount("/output", StaticFiles(directory=OUTPUT_FOLDER), name="output")
+if os.path.isdir(REACT_ASSETS):
+    app.mount("/assets", StaticFiles(directory=REACT_ASSETS), name="react-assets")
 
 app.include_router(admin_router)
 
-REACT_DIST = "frontend/dist"
-
 @app.get("/")
 async def serve_root():
-    return FileResponse(f"{REACT_DIST}/index.html")
+    if os.path.isdir(REACT_DIST):
+        return FileResponse(os.path.join(REACT_DIST, "index.html"))
+    return {"message": "Backend running"}
 
 @app.get("/login")
 async def serve_login():
-    return FileResponse(f"{REACT_DIST}/index.html")
+    return FileResponse(os.path.join(REACT_DIST, "index.html"))
 
 @app.get("/register")
 async def serve_register():
-    return FileResponse(f"{REACT_DIST}/index.html")
+    return FileResponse(os.path.join(REACT_DIST, "index.html"))
 
 @app.get("/dashboard")
 async def serve_dashboard():
-    return FileResponse(f"{REACT_DIST}/index.html")
+    return FileResponse(os.path.join(REACT_DIST, "index.html"))
 
 @app.get("/viewer/{doc_id}")
 async def serve_viewer(doc_id: str):
-    return FileResponse(f"{REACT_DIST}/index.html")
+    return FileResponse(os.path.join(REACT_DIST, "index.html"))
 
 @app.get("/admin")
 @app.get("/admin/{path:path}")
 async def serve_admin():
-    return FileResponse(f"{REACT_DIST}/index.html")
-
-UPLOAD_FOLDER = "backend/documents"
-OUTPUT_FOLDER = "backend/output"
-
-os.makedirs(UPLOAD_FOLDER, exist_ok=True)
-os.makedirs(OUTPUT_FOLDER, exist_ok=True)
+    return FileResponse(os.path.join(REACT_DIST, "index.html"))
 
 from backend.auth_utils import hash_password, verify_password, SECRET_KEY, ALGORITHM, ACCESS_TOKEN_EXPIRE_MINUTES, create_access_token, get_current_user
 

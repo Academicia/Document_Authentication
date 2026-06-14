@@ -164,6 +164,7 @@ async def upload_document(file: UploadFile = File(...),signer_id: str = Form(...
 @app.post("/sign/{doc_id}")
 def sign_document(doc_id: str, qr_x: int = Form(450), qr_y: int = Form(700),
                   qr_page: int = Form(0), current_user: User = Depends(get_current_user)):
+    try:
         if current_user.role != "SIGNER":
             raise HTTPException(status_code=403, detail="Only signer can sign documents")
         db = SessionLocal()
@@ -175,20 +176,21 @@ def sign_document(doc_id: str, qr_x: int = Form(450), qr_y: int = Form(700),
             db.close()
             return {"message": "Already signed"}
         file_hash = hash_file(doc.file_path)
-        with open("backend/crypto/private_key.pem", "rb") as f:
+        key_path = os.path.join(BASE_DIR, "crypto", "private_key.pem")
+        with open(key_path, "rb") as f:
             private_key = serialization.load_pem_private_key(
-            f.read(),
-            password=None
-        )
+                f.read(),
+                password=None
+            )
         signature = private_key.sign(
-        file_hash,
-        padding.PSS(
-            mgf=padding.MGF1(hashes.SHA256()),
-            salt_length=padding.PSS.MAX_LENGTH
-        ),
-        hashes.SHA256()
+            file_hash,
+            padding.PSS(
+                mgf=padding.MGF1(hashes.SHA256()),
+                salt_length=padding.PSS.MAX_LENGTH
+            ),
+            hashes.SHA256()
         )
-        signature_path = f"{OUTPUT_FOLDER}/{doc_id}_signature.bin"
+        signature_path = os.path.join(OUTPUT_FOLDER, f"{doc_id}_signature.bin")
         with open(signature_path, "wb") as f:
             f.write(signature)
         doc.signature_path = signature_path
@@ -197,9 +199,9 @@ def sign_document(doc_id: str, qr_x: int = Form(450), qr_y: int = Form(700),
         base_url = os.getenv("VERIFICATION_BASE_URL", "http://127.0.0.1:8000")
         verification_link = f"{base_url}/verify/{doc_id}"
         qr = qrcode.make(verification_link)
-        qr_path = f"{OUTPUT_FOLDER}/{doc_id}_qr.png"
+        qr_path = os.path.join(OUTPUT_FOLDER, f"{doc_id}_qr.png")
         qr.save(qr_path)
-        overlay_pdf = f"{OUTPUT_FOLDER}/{doc_id}_overlay.pdf"
+        overlay_pdf = os.path.join(OUTPUT_FOLDER, f"{doc_id}_overlay.pdf")
         reader = PdfReader(doc.file_path)
         target_page = reader.pages[qr_page]
         mb = target_page.mediabox
@@ -214,7 +216,7 @@ def sign_document(doc_id: str, qr_x: int = Form(450), qr_y: int = Form(700),
             if i == qr_page:
                 pg.merge_page(overlay.pages[0])
             writer.add_page(pg)
-        final_pdf_path = f"{OUTPUT_FOLDER}/{doc_id}_signed.pdf"
+        final_pdf_path = os.path.join(OUTPUT_FOLDER, f"{doc_id}_signed.pdf")
         with open(final_pdf_path, "wb") as f:
             writer.write(f)
         doc.signed_pdf_path = final_pdf_path
@@ -223,9 +225,13 @@ def sign_document(doc_id: str, qr_x: int = Form(450), qr_y: int = Form(700),
         return {
             "message": "Document signed & QR embedded successfully",
             "document_id": doc_id,
-            "signed_pdf": final_pdf_path,
+            "signed_pdf": f"/output/{doc_id}_signed.pdf",
             "verification_link": verification_link
         }
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/audit/{doc_id}")
 def get_audit_logs(doc_id: str):

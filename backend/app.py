@@ -23,9 +23,10 @@ from PyPDF2 import PdfReader, PdfWriter
 
 app = FastAPI()
 
+cors_origins = os.getenv("CORS_ORIGINS", "http://localhost:3000,http://127.0.0.1:3000").split(",")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000"],
+    allow_origins=cors_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -184,7 +185,8 @@ def sign_document(doc_id: str, qr_x: int = Form(450), qr_y: int = Form(700),
         doc.signature_path = signature_path
         doc.status = "SIGNED"
         log_action(doc_id, "SIGN", current_user.username)
-        verification_link = f"https://academicia-document-auth.onrender.com/verify/{doc_id}"
+        base_url = os.getenv("VERIFICATION_BASE_URL", "http://127.0.0.1:8000")
+        verification_link = f"{base_url}/verify/{doc_id}"
         qr = qrcode.make(verification_link)
         qr_path = f"{OUTPUT_FOLDER}/{doc_id}_qr.png"
         qr.save(qr_path)

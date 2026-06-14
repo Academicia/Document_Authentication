@@ -11,3 +11,4 @@ qrcode[pil]
 pillow
 python-multipart
 pycryptodome
+python-dotenv

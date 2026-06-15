@@ -241,22 +241,34 @@ def get_audit_logs(doc_id: str):
     db.close()
     return logs
 
-@app.get("/verify/{doc_id}")
-def verify_document(doc_id: str):
+@app.get("/api/verify/{doc_id}")
+def verify_document_api(doc_id: str):
     db = SessionLocal()
     doc = db.query(Document).filter(Document.id == doc_id).first()
     if not doc:
         db.close()
-        return {"status": "Document not found"}
-    if doc.status != "SIGNED":
-        db.close()
-        return {"status": "Document not signed"}
-    signer = db.query(User).filter(User.id == doc.signer_id).first()
-    signer_name = signer.username if signer else "Unknown"
-    db.close()
-    return {
-        "status": f"Valid Document, Signed by {signer_name}"
+        return {"status": "INVALID", "message": "Document not found"}
+    uploader = db.query(User).filter(User.id == doc.uploaded_by).first()
+    signer = db.query(User).filter(User.id == doc.signer_id).first() if doc.signer_id else None
+    result = {
+        "status": "VALID" if doc.status == "SIGNED" else doc.status,
+        "document_id": doc.id,
+        "document_type": None,
+        "uploaded_by": uploader.username if uploader else "Unknown",
+        "uploader_name": uploader.full_name if uploader and uploader.full_name else uploader.username if uploader else "Unknown",
+        "signer_name": signer.full_name if signer and signer.full_name else signer.username if signer else None,
+        "uploaded_at": doc.created_at.isoformat() if doc.created_at else None,
+        "signed_at": doc.created_at.isoformat() if doc.status == "SIGNED" and doc.created_at else None,
+        "rejection_reason": doc.rejection_reason,
+        "has_signed_pdf": bool(doc.signed_pdf_path),
+        "message": f"Document is verified and signed by {signer.full_name or signer.username}" if doc.status == "SIGNED" and signer else "Document is not yet signed" if doc.status != "SIGNED" else "Signer not found"
     }
+    db.close()
+    return result
+
+@app.get("/verify/{doc_id}")
+async def serve_verify_page(doc_id: str):
+    return FileResponse(os.path.join(REACT_DIST, "index.html"))
 
 @app.get("/signers")
 def get_signers(current_user: User = Depends(get_current_user)):

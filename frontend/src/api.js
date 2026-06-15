@@ -64,7 +64,7 @@ export function signDocument(docId, qr_x = 450, qr_y = 700, qr_page = 0) {
 }
 
 export function verifyDocument(docId) {
-  return fetch(BASE + '/verify/' + docId).then(r => r.json())
+  return fetch(BASE + '/api/verify/' + docId).then(r => r.json())
 }
 
 export function getUserDocuments() {

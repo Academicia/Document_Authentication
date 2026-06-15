@@ -173,6 +173,8 @@ def sign_document(doc_id: str, qr_x: int = Form(450), qr_y: int = Form(700),
             raise HTTPException(status_code=404, detail="Document not found")
         if doc.status == "SIGNED":
             base_url = os.getenv("VERIFICATION_BASE_URL", "https://ad-backend-9z8v.onrender.com")
+            if "ad-backend.onrender.com" in base_url and "ad-backend-9z8v" not in base_url:
+                base_url = "https://ad-backend-9z8v.onrender.com"
             verification_link = f"{base_url}/verify/{doc_id}"
             qr_code = qrcode.QRCode(box_size=10, border=2)
             qr_code.add_data(verification_link)
@@ -228,6 +230,8 @@ def sign_document(doc_id: str, qr_x: int = Form(450), qr_y: int = Form(700),
         doc.status = "SIGNED"
         log_action(doc_id, "SIGN", current_user.username)
         base_url = os.getenv("VERIFICATION_BASE_URL", "https://ad-backend-9z8v.onrender.com")
+        if "ad-backend.onrender.com" in base_url and "ad-backend-9z8v" not in base_url:
+            base_url = "https://ad-backend-9z8v.onrender.com"
         verification_link = f"{base_url}/verify/{doc_id}"
         qr_code = qrcode.QRCode(box_size=10, border=2)
         qr_code.add_data(verification_link)

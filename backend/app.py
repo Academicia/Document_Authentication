@@ -172,8 +172,40 @@ def sign_document(doc_id: str, qr_x: int = Form(450), qr_y: int = Form(700),
             db.close()
             raise HTTPException(status_code=404, detail="Document not found")
         if doc.status == "SIGNED":
+            base_url = os.getenv("VERIFICATION_BASE_URL", "http://127.0.0.1:8000")
+            verification_link = f"{base_url}/verify/{doc_id}"
+            qr_code = qrcode.QRCode(box_size=10, border=2)
+            qr_code.add_data(verification_link)
+            qr_code.make(fit=True)
+            qr_img = qr_code.make_image(fill_color="black", back_color="white").convert('RGB')
+            qr_path = os.path.join(OUTPUT_FOLDER, f"{doc_id}_qr.png")
+            qr_img.save(qr_path)
+            reader = PdfReader(doc.file_path)
+            writer = PdfWriter()
+            for i, pg in enumerate(reader.pages):
+                if i == qr_page:
+                    mb = pg.mediabox
+                    page_w = float(mb.width)
+                    page_h = float(mb.height)
+                    overlay_pdf = os.path.join(OUTPUT_FOLDER, f"{doc_id}_overlay.pdf")
+                    c = canvas.Canvas(overlay_pdf, pagesize=(page_w, page_h))
+                    c.drawImage(qr_path, qr_x, qr_y, width=150, height=150, mask='auto')
+                    c.save()
+                    overlay_reader = PdfReader(overlay_pdf)
+                    pg.merge_page(overlay_reader.pages[0], over=True)
+                writer.add_page(pg)
+            final_pdf_path = os.path.join(OUTPUT_FOLDER, f"{doc_id}_signed.pdf")
+            with open(final_pdf_path, "wb") as f:
+                writer.write(f)
+            doc.signed_pdf_path = final_pdf_path
+            db.commit()
             db.close()
-            return {"message": "Already signed"}
+            return {
+                "message": "QR regenerated",
+                "document_id": doc_id,
+                "signed_pdf": f"/output/{doc_id}_signed.pdf",
+                "verification_link": verification_link
+            }
         file_hash = hash_file(doc.file_path)
         key_path = os.path.join(BASE_DIR, "crypto", "private_key.pem")
         with open(key_path, "rb") as f:

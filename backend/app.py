@@ -17,6 +17,8 @@ from cryptography.hazmat.primitives.asymmetric import padding
 from jose import jwt, JWTError
 
 import qrcode
+from reportlab.pdfgen import canvas
+from pypdf import PdfReader, PdfWriter
 
 app = FastAPI()
 
@@ -201,15 +203,23 @@ def sign_document(doc_id: str, qr_x: int = Form(450), qr_y: int = Form(700),
         qr_img = qr_code.make_image(fill_color="black", back_color="white").convert('RGB')
         qr_path = os.path.join(OUTPUT_FOLDER, f"{doc_id}_qr.png")
         qr_img.save(qr_path)
-        import fitz
-        pdf_doc = fitz.open(doc.file_path)
-        page = pdf_doc[qr_page]
-        page_height = page.rect.height
-        rect = fitz.Rect(qr_x, page_height - qr_y - 150, qr_x + 150, page_height - qr_y)
-        page.insert_image(rect, filename=qr_path)
+        reader = PdfReader(doc.file_path)
+        writer = PdfWriter()
+        for i, pg in enumerate(reader.pages):
+            if i == qr_page:
+                mb = pg.mediabox
+                page_w = float(mb.width)
+                page_h = float(mb.height)
+                overlay_pdf = os.path.join(OUTPUT_FOLDER, f"{doc_id}_overlay.pdf")
+                c = canvas.Canvas(overlay_pdf, pagesize=(page_w, page_h))
+                c.drawImage(qr_path, qr_x, qr_y, width=150, height=150, mask='auto')
+                c.save()
+                overlay_reader = PdfReader(overlay_pdf)
+                pg.merge_page(overlay_reader.pages[0], over=True)
+            writer.add_page(pg)
         final_pdf_path = os.path.join(OUTPUT_FOLDER, f"{doc_id}_signed.pdf")
-        pdf_doc.save(final_pdf_path)
-        pdf_doc.close()
+        with open(final_pdf_path, "wb") as f:
+            writer.write(f)
         doc.signed_pdf_path = final_pdf_path
         db.commit()
         db.close()

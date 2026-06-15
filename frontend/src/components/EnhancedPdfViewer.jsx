@@ -77,7 +77,7 @@ export default function EnhancedPdfViewer({ docId, role, onSign, signing }) {
       }
     })
     return () => { cancelled = true }
-  }, [pdf, pageNum, zoom])
+  }, [pdf, pageNum, zoom, loading])
 
   useEffect(() => {
     return () => { if (renderTaskRef.current) renderTaskRef.current.cancel() }

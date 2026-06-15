@@ -3,9 +3,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 
-from datetime import datetime, timedelta
 from fastapi import Depends
-from jose import jwt
 from fastapi.security import OAuth2PasswordRequestForm
 from backend.database import SessionLocal, Document, User, AuditLog
 from backend.admin_routes import router as admin_router
@@ -19,7 +17,7 @@ from cryptography.hazmat.primitives.asymmetric import padding
 
 import qrcode
 from reportlab.pdfgen import canvas
-from PyPDF2 import PdfReader, PdfWriter
+from pypdf import PdfReader, PdfWriter
 
 app = FastAPI()
 
@@ -80,7 +78,7 @@ async def serve_viewer(doc_id: str):
 async def serve_admin():
     return FileResponse(os.path.join(REACT_DIST, "index.html"))
 
-from backend.auth_utils import hash_password, verify_password, SECRET_KEY, ALGORITHM, ACCESS_TOKEN_EXPIRE_MINUTES, create_access_token, get_current_user
+from backend.auth_utils import hash_password, verify_password, create_access_token, get_current_user
 
 def hash_file(filepath):
     digest = hashes.Hash(hashes.SHA256())
@@ -198,23 +196,25 @@ def sign_document(doc_id: str, qr_x: int = Form(450), qr_y: int = Form(700),
         log_action(doc_id, "SIGN", current_user.username)
         base_url = os.getenv("VERIFICATION_BASE_URL", "http://127.0.0.1:8000")
         verification_link = f"{base_url}/verify/{doc_id}"
-        qr = qrcode.make(verification_link)
+        qr_code = qrcode.QRCode(box_size=10, border=2)
+        qr_code.add_data(verification_link)
+        qr_code.make(fit=True)
+        qr_img = qr_code.make_image(fill_color="black", back_color="white").convert('RGB')
         qr_path = os.path.join(OUTPUT_FOLDER, f"{doc_id}_qr.png")
-        qr.save(qr_path)
-        overlay_pdf = os.path.join(OUTPUT_FOLDER, f"{doc_id}_overlay.pdf")
+        qr_img.save(qr_path)
         reader = PdfReader(doc.file_path)
-        target_page = reader.pages[qr_page]
-        mb = target_page.mediabox
-        page_w = float(mb.width)
-        page_h = float(mb.height)
-        c = canvas.Canvas(overlay_pdf, pagesize=(page_w, page_h))
-        c.drawImage(qr_path, qr_x, qr_y, width=100, height=100)
-        c.save()
-        overlay = PdfReader(overlay_pdf)
         writer = PdfWriter()
         for i, pg in enumerate(reader.pages):
             if i == qr_page:
-                pg.merge_page(overlay.pages[0])
+                mb = pg.mediabox
+                page_w = float(mb.width)
+                page_h = float(mb.height)
+                overlay_pdf = os.path.join(OUTPUT_FOLDER, f"{doc_id}_overlay.pdf")
+                c = canvas.Canvas(overlay_pdf, pagesize=(page_w, page_h))
+                c.drawImage(qr_path, qr_x, qr_y, width=150, height=150, mask='auto')
+                c.save()
+                overlay_reader = PdfReader(overlay_pdf)
+                pg.merge_page(overlay_reader.pages[0], over=True)
             writer.add_page(pg)
         final_pdf_path = os.path.join(OUTPUT_FOLDER, f"{doc_id}_signed.pdf")
         with open(final_pdf_path, "wb") as f:
@@ -308,15 +308,12 @@ def user_documents(current_user: User = Depends(get_current_user)):
     return result
 
 @app.get("/document/{doc_id}")
-def view_document(doc_id: str, token: str = Query(...)):
-    payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-    username = payload.get("sub")
+def view_document(doc_id: str, current_user: User = Depends(get_current_user)):
     db = SessionLocal()
-    user = db.query(User).filter(User.username == username).first()
     doc = db.query(Document).filter(Document.id == doc_id).first()
     if not doc:
         raise HTTPException(status_code=404)
-    if doc.uploaded_by != user.id and doc.signer_id != user.id:
+    if doc.uploaded_by != current_user.id and doc.signer_id != current_user.id:
         raise HTTPException(status_code=403)
     return FileResponse(doc.file_path, media_type="application/pdf")
 

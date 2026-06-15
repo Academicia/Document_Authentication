@@ -35,7 +35,9 @@ export default function EnhancedPdfViewer({ docId, role, onSign, signing }) {
       setError(null)
       const token = localStorage.getItem('token')
       const pdfDoc = await pdfjsLib.getDocument({
-        url: `${BASE}/document/${docId}?token=${token}`,
+        url: `${BASE}/document/${docId}`,
+        httpHeaders: { 'Authorization': `Bearer ${token}` },
+        withCredentials: true,
       }).promise
       setPdf(pdfDoc)
       setNumPages(pdfDoc.numPages)

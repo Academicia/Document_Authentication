@@ -10,8 +10,7 @@ export default defineConfig({
       '/register': { target: 'http://127.0.0.1:8000' },
       '/upload': { target: 'http://127.0.0.1:8000' },
       '/sign/': { target: 'http://127.0.0.1:8000' },
-      '/verify/': { target: 'http://127.0.0.1:8000' },
-      '/verify': { target: 'http://127.0.0.1:8000' },
+      '/api/': { target: 'http://127.0.0.1:8000' },
       '/signers': { target: 'http://127.0.0.1:8000' },
       '/signer/': { target: 'http://127.0.0.1:8000' },
       '/user/': { target: 'http://127.0.0.1:8000' },
@@ -19,6 +18,8 @@ export default defineConfig({
       '/audit/': { target: 'http://127.0.0.1:8000' },
       '/docs/': { target: 'http://127.0.0.1:8000' },
       '/output/': { target: 'http://127.0.0.1:8000' },
+      '/admin': { target: 'http://127.0.0.1:8000' },
+      '/admin/': { target: 'http://127.0.0.1:8000' },
     }
   }
 })

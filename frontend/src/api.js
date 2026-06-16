@@ -1,4 +1,4 @@
-const BASE = import.meta.env.VITE_API_URL || 'https://ad-backend-9z8v.onrender.com'
+const BASE = import.meta.env.VITE_API_URL || ''
 
 export { BASE }
 

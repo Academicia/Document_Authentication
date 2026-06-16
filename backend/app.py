@@ -34,7 +34,7 @@ os.makedirs(OUTPUT_FOLDER, exist_ok=True)
 
 cors_origins = [
     origin.strip()
-    for origin in os.getenv("CORS_ORIGINS", "http://localhost:3000,http://127.0.0.1:3000").split(",")
+    for origin in os.getenv("CORS_ORIGINS", "http://localhost:3000,http://localhost:3001,http://localhost:3002,http://127.0.0.1:3000,http://127.0.0.1:3001,http://127.0.0.1:3002").split(",")
     if origin.strip()
 ]
 app.add_middleware(

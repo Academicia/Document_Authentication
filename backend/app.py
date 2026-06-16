@@ -322,7 +322,7 @@ def verify_document_api(verification_id: str):
     sign_log = db.query(AuditLog).filter(
         AuditLog.document_id == doc.id, AuditLog.action == "SIGN"
     ).order_by(AuditLog.timestamp.desc()).first()
-    signed_at = sign_log.timestamp.isoformat() if sign_log else None
+    signed_at = sign_log.timestamp.isoformat() + "Z" if sign_log else None
     result = {
         "status": "VALID" if doc.status == "SIGNED" else doc.status,
         "verification_id": doc.verification_id or doc.id,
@@ -334,8 +334,8 @@ def verify_document_api(verification_id: str):
         "enrollment_number": uploader.username if uploader else "",
         "department": uploader.department if uploader else "",
         "signer_name": signer.full_name if signer and signer.full_name else signer.username if signer else None,
-        "uploaded_at": doc.created_at.isoformat() if doc.created_at else None,
-        "signed_at": signed_at or (doc.created_at.isoformat() if doc.created_at else None),
+        "uploaded_at": doc.created_at.isoformat() + "Z" if doc.created_at else None,
+        "signed_at": signed_at or (doc.created_at.isoformat() + "Z" if doc.created_at else None),
         "rejection_reason": doc.rejection_reason,
         "has_signed_pdf": bool(doc.signed_pdf_path),
         "approved_by": signer.full_name if signer and signer.full_name else signer.username if signer else None,

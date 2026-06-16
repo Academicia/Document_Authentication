@@ -200,8 +200,8 @@ def sign_document(doc_id: str, qr_x: int = Form(450), qr_y: int = Form(700),
         if doc.status == "SIGNED":
             if not doc.verification_id:
                 doc.verification_id = str(uuid.uuid4())
-            base_url = os.getenv("VERIFICATION_BASE_URL", "http://127.0.0.1:8000")
-            verification_path = os.getenv("VERIFICATION_PATH", "verify")
+            base_url = os.getenv("VERIFICATION_BASE_URL")
+            verification_path = os.getenv("VERIFICATION_PATH")
             verification_link = f"{base_url}/{verification_path}/{doc.verification_id}"
             qr_code = qrcode.QRCode(box_size=10, border=2)
             qr_code.add_data(verification_link)
@@ -258,8 +258,8 @@ def sign_document(doc_id: str, qr_x: int = Form(450), qr_y: int = Form(700),
         if not doc.verification_id:
             doc.verification_id = str(uuid.uuid4())
         log_action(doc_id, "SIGN", current_user.username)
-        base_url = os.getenv("VERIFICATION_BASE_URL", "http://127.0.0.1:8000")
-        verification_path = os.getenv("VERIFICATION_PATH", "verify")
+        base_url = os.getenv("VERIFICATION_BASE_URL")
+        verification_path = os.getenv("VERIFICATION_PATH")
         verification_link = f"{base_url}/{verification_path}/{doc.verification_id}"
         qr_code = qrcode.QRCode(box_size=10, border=2)
         qr_code.add_data(verification_link)

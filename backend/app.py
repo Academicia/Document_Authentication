@@ -40,6 +40,8 @@ def run_migrations():
     import sqlalchemy as sa
     from sqlalchemy import inspect
     try:
+        from backend.database import Base, engine
+        Base.metadata.create_all(bind=engine)
         db = SessionLocal()
         inspector = inspect(db.bind)
         cols = [c["name"] for c in inspector.get_columns("documents")]

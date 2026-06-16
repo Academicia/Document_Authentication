@@ -3,7 +3,7 @@ from sqlalchemy import create_engine, Column, String, DateTime, Integer, Text
 from sqlalchemy.orm import declarative_base, sessionmaker
 from datetime import datetime
 
-DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://neondb_owner:npg_8Dli6MdPVspm@ep-patient-block-aoolxm39-pooler.c-2.ap-southeast-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require")
+DATABASE_URL = os.getenv("DATABASE_URL")
 
 engine = create_engine(DATABASE_URL)
 
@@ -77,4 +77,4 @@ class AuditLog(Base):
     performed_by = Column(String)
     timestamp = Column(DateTime, default=datetime.utcnow)
 
-Base.metadata.create_all(bind=engine)
+

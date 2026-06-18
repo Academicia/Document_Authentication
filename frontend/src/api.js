@@ -63,8 +63,29 @@ export function signDocument(docId, qr_x = 450, qr_y = 700, qr_page = 0) {
   }).then(r => { if (!r.ok) throw new Error('Signing failed'); return r.json() })
 }
 
+async function fetchWithRetry(url, retries = 5, delay = 3000) {
+  for (let i = 0; i < retries; i++) {
+    try {
+      const res = await fetch(url)
+      if (res.ok) return res.json()
+      if (res.status === 503 && i < retries - 1) {
+        await new Promise(r => setTimeout(r, delay))
+        continue
+      }
+      return res.json()
+    } catch {
+      if (i < retries - 1) {
+        await new Promise(r => setTimeout(r, delay))
+        continue
+      }
+      throw new Error('Service unavailable, please try again')
+    }
+  }
+  throw new Error('Service unavailable, please try again')
+}
+
 export function verifyDocument(docId) {
-  return fetch(BASE + '/api/verify/' + docId).then(r => r.json())
+  return fetchWithRetry(BASE + '/api/verify/' + docId)
 }
 
 export function getUserDocuments() {

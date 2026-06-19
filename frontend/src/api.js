@@ -64,9 +64,10 @@ export function signDocument(docId, qr_x = 450, qr_y = 700, qr_page = 0) {
 }
 
 async function fetchWithRetry(url, retries = 10, delay = 3000) {
+  const cacheBuster = url + (url.includes('?') ? '&' : '?') + '_t=' + Date.now()
   for (let i = 0; i < retries; i++) {
     try {
-      const res = await fetch(url)
+      const res = await fetch(cacheBuster, { cache: 'no-store' })
       if (res.ok) return res.json()
       if (res.status === 503 && i < retries - 1) {
         await new Promise(r => setTimeout(r, delay))
